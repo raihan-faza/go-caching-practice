@@ -1,17 +1,19 @@
 package handler
 
 import (
+	"context"
 	"fmt"
 	"time"
 
 	"github.com/patrickmn/go-cache"
+	"github.com/redis/go-redis/v9"
 )
 
-func getUserInfo(userID string) string {
+func getUserInfo(ctx context.Context, inMemoryCache *cache.Cache, redisClient *redis.Client, userID string) (string, error) {
 	// 1. Check in-memory cache
 	if val, found := inMemoryCache.Get(userID); found {
 		fmt.Println("Cache Hit: In-memory")
-		return val.(string)
+		return val.(string), nil
 	}
 
 	// 2. Check Redis cache
@@ -20,7 +22,7 @@ func getUserInfo(userID string) string {
 		fmt.Println("Cache Hit: Redis")
 		// Store in in-memory cache for faster access next time
 		inMemoryCache.Set(userID, val, cache.DefaultExpiration)
-		return val
+		return val, nil
 	}
 
 	// 3. Fetch from Database (Simulated)
@@ -31,7 +33,7 @@ func getUserInfo(userID string) string {
 	inMemoryCache.Set(userID, data, cache.DefaultExpiration)
 	redisClient.Set(ctx, userID, data, 10*time.Minute)
 
-	return data
+	return data, nil
 }
 
 // Simulated database fetch
